@@ -17,7 +17,22 @@ TABLE_TAG = 'primary col-sm-9 col-xs-12'
 TABLE_HEADER_STRING = 'Data range end'
 
 
+def list_diff(list):
+    prev, new_list = 0, []
+    for item in list:
+        new_list.append(item - prev)
+        prev = item
+    return new_list
+
+def pull_items(data, key_name):
+    return [data[key][key_name] for key in data.keys()]
+
+
 def get_html(url):
+    '''
+    :param url:
+    :return:
+    '''
     try:
         html = urlopen(url)
     except HTTPError as e:
@@ -36,16 +51,24 @@ def main():
     print(dates[-1], data[dates[-1]])
     print(dates[-2], data[dates[-2]])
 
-    cases = [data[key]['Total Cases'] for key in data.keys()]
-    new_cases = [cases[0]]
-    for i in range(0, len(cases) - 1):
-        new_cases.append(cases[i + 1] - cases[i])
+    cumulative_testing = pull_items(data, 'Total patients approved for testing as of Reporting Date')
+    cumulative_cases = pull_items(data, 'Total Cases')
+    cumulative_hospitalizations = pull_items(data, 'Number of patients hospitalized with COVID-19')
+    cumulative_icu = pull_items(data, 'Number of patients in ICU with COVID-19')
+    cumulative_vent = pull_items(data, 'Number of patients in ICU on a ventilator with COVID-19')
+
+    new_tests = list_diff(cumulative_testing)
+    new_cases = list_diff(cumulative_cases)
+    new_hospitalizations = list_diff(cumulative_hospitalizations)
+    new_icu_cases = list_diff(cumulative_icu)
+    new_vent_cases = list_diff(cumulative_vent)
+
 
     plt.style.use('fivethirtyeight')
 
-    log_cases = list(map(lambda x: 0 if x <= 0 else math.log(x), cases))
+    log_cases = list(map(lambda x: 0 if x <= 0 else math.log(x), cumulative_cases))
     log_new_cases = list(map(lambda x: 0 if x <= 0 else math.log(x), new_cases))
-    spline_curve = UnivariateSpline(log_cases, log_new_cases, s=5)
+    spline_curve = UnivariateSpline(log_cases, log_new_cases, s=50)
     xs = np.linspace(0, max(log_cases), 100)
     ys = spline_curve(xs)
 
@@ -57,12 +80,23 @@ def main():
     plt.suptitle('LogLog Daily Case Rate')
     plt.show()
 
-
     plt.rc('xtick', labelsize=8)
-    plt.scatter(cases, new_cases)
+    plt.scatter(cumulative_cases, new_cases)
     plt.ylabel('# of cases')
     # plt.xticks(cases[-10:], rotation=90)
     plt.suptitle('Daily Case Rate')
+    plt.show()
+
+    plt.bar(dates[-10:], new_tests[-10:])
+    plt.suptitle('New Testing Performed')
+    plt.show()
+
+
+    all_hospital_cases = zip(new_hospitalizations[58:], new_icu_cases[58:], new_vent_cases[58:])
+    moderate = plt.bar(dates[58:], [a - b - c for a,b,c in all_hospital_cases])
+    icu = plt.bar(dates[58:], new_icu_cases[58:])
+    vent = plt.bar(dates[58:], new_vent_cases[58:])
+    plt.suptitle('Hospitalizations')
     plt.show()
 
 
@@ -102,6 +136,9 @@ def get_data():
 
 
 def check_when_last_updated():
+    '''
+    :return:
+    '''
     data_range_end = None
     html = get_html(ONTARIO_COVID19_RESOURCE_PAGE)
     bs = BeautifulSoup(html.read(), 'html.parser')
@@ -117,6 +154,10 @@ def check_when_last_updated():
 
 
 def process_csv_data(raw_data):
+    '''
+    :param raw_data:
+    :return:
+    '''
     headers, data = raw_data[0].split(',')[1:], raw_data[1:]
     headers = list(map(lambda x: x.rstrip(), headers))
     data_dict = dict()

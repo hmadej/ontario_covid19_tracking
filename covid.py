@@ -15,6 +15,7 @@ ONTARIO_COVID19_RESOURCE_PAGE = 'https://data.ontario.ca/dataset/status-of-covid
 DOWNLOAD_BUTTON_TAG = 'btn btn-primary dataset-download-link resource-url-analytics resource-type-None'
 TABLE_TAG = 'primary col-sm-9 col-xs-12'
 TABLE_HEADER_STRING = 'Data range end'
+THREE_WEEK_DELAY = 21
 
 
 def list_diff(list):
@@ -24,8 +25,17 @@ def list_diff(list):
         prev = item
     return new_list
 
+
+def weekly_average(data):
+    return [sum(data[i:i + 7]) // len(data[i:i + 7]) for i in range(0, len(data), 7)]
+
+
 def pull_items(data, key_name):
     return [data[key][key_name] for key in data.keys()]
+
+
+def log_items(data_list):
+    return [0 if x <= 0 else math.log(x) for x in data_list]
 
 
 def get_html(url):
@@ -56,47 +66,75 @@ def main():
     cumulative_hospitalizations = pull_items(data, 'Number of patients hospitalized with COVID-19')
     cumulative_icu = pull_items(data, 'Number of patients in ICU with COVID-19')
     cumulative_vent = pull_items(data, 'Number of patients in ICU on a ventilator with COVID-19')
+    cumulative_deaths = pull_items(data, 'Deaths')
 
     new_tests = list_diff(cumulative_testing)
     new_cases = list_diff(cumulative_cases)
     new_hospitalizations = list_diff(cumulative_hospitalizations)
     new_icu_cases = list_diff(cumulative_icu)
     new_vent_cases = list_diff(cumulative_vent)
-
+    new_deaths = list_diff(cumulative_deaths)
 
     plt.style.use('fivethirtyeight')
 
-    log_cases = list(map(lambda x: 0 if x <= 0 else math.log(x), cumulative_cases))
-    log_new_cases = list(map(lambda x: 0 if x <= 0 else math.log(x), new_cases))
-    spline_curve = UnivariateSpline(log_cases, log_new_cases, s=50)
-    xs = np.linspace(0, max(log_cases), 100)
+
+    positive_rate = [abs(a / (lambda x: 1 if x == 0 else x)(b))*100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
+    plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
+    plt.xticks(dates[-len(positive_rate):][-10:], rotation=90)
+    plt.yticks(np.arange(0, 20, step=0.5))
+    plt.suptitle('Positive Case Rate')
+    plt.show()
+
+
+    weekly_average_deaths = weekly_average(new_deaths)
+    weekly_average_cases = weekly_average(new_cases)
+
+    plt.plot(range(1, len(weekly_average_deaths)+1), weekly_average_cases)
+    plt.plot(range(1, len(weekly_average_deaths) + 1), weekly_average_deaths)
+    plt.suptitle('Weekly Death Rate Vs Case Rate Ontario')
+    plt.show()
+
+    plt.plot(range(1, len(weekly_average_deaths) + 1), weekly_average_deaths)
+    plt.suptitle('Weekly Death Rate Ontario')
+    plt.show()
+
+    log_weekly_cases = log_items(weekly_average(cumulative_cases))
+    log_new_weekly_cases = log_items(weekly_average(new_cases))
+    spline_curve = UnivariateSpline(log_weekly_cases, log_new_weekly_cases, s=50)
+    wxs = np.linspace(0, max(log_weekly_cases), 100)
+    wys = spline_curve(wxs)
+
+    plt.rc('xtick', labelsize=8)
+    plt.plot(log_weekly_cases, log_new_weekly_cases, '.')
+    plt.plot(wxs, wys)
+    plt.ylabel('# of cases')
+    plt.suptitle('LogLog Weekly Case Rate')
+    plt.show()
+
+    log_cases = log_items(cumulative_cases)
+    log_new_cases = log_items(new_cases)
+    spline_curve = UnivariateSpline(log_cases, log_new_cases, s=100)
+    xs = np.linspace(0, max(log_weekly_cases), 200)
     ys = spline_curve(xs)
 
     plt.rc('xtick', labelsize=8)
     plt.plot(log_cases, log_new_cases, '.')
     plt.plot(xs, ys)
     plt.ylabel('# of cases')
-    # plt.xticks(cases[-10:], rotation=90)
     plt.suptitle('LogLog Daily Case Rate')
     plt.show()
 
-    plt.rc('xtick', labelsize=8)
-    plt.scatter(cumulative_cases, new_cases)
-    plt.ylabel('# of cases')
-    # plt.xticks(cases[-10:], rotation=90)
-    plt.suptitle('Daily Case Rate')
-    plt.show()
-
     plt.bar(dates[-10:], new_tests[-10:])
+    plt.xticks(dates[-10:], rotation=90)
     plt.suptitle('New Testing Performed')
     plt.show()
 
-
-    all_hospital_cases = zip(new_hospitalizations[58:], new_icu_cases[58:], new_vent_cases[58:])
-    moderate = plt.bar(dates[58:], [a - b - c for a,b,c in all_hospital_cases])
+    moderate = plt.bar(dates[58:], new_hospitalizations[58:])
     icu = plt.bar(dates[58:], new_icu_cases[58:])
     vent = plt.bar(dates[58:], new_vent_cases[58:])
+    plt.xticks(dates[58:], rotation=90)
     plt.suptitle('Hospitalizations')
+    plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
     plt.show()
 
 
@@ -129,6 +167,7 @@ def get_data():
         with open('datefile.txt', 'w') as f:
             f.write(date)
     else:
+        print(date)
         with open('data.txt', 'r') as infile:
             data = json.load(infile)
 

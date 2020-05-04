@@ -18,16 +18,16 @@ TABLE_HEADER_STRING = 'Data range end'
 THREE_WEEK_DELAY = 21
 
 
-def list_diff(list):
+def list_diff(items):
     prev, new_list = 0, []
-    for item in list:
+    for item in items:
         new_list.append(item - prev)
         prev = item
     return new_list
 
 
-def weekly_average(data):
-    return [sum(data[i:i + 7]) // len(data[i:i + 7]) for i in range(0, len(data), 7)]
+def window_average(data, window):
+    return [sum(data[i:i + window]) // len(data[i:i + window]) for i in range(0, len(data), window)]
 
 
 def pull_items(data, key_name):
@@ -58,9 +58,6 @@ def main():
     data = get_data()
     dates = sorted(list(data.keys()))
 
-    print(dates[-1], data[dates[-1]])
-    print(dates[-2], data[dates[-2]])
-
     cumulative_testing = pull_items(data, 'Total patients approved for testing as of Reporting Date')
     cumulative_cases = pull_items(data, 'Total Cases')
     cumulative_hospitalizations = pull_items(data, 'Number of patients hospitalized with COVID-19')
@@ -77,29 +74,28 @@ def main():
 
     plt.style.use('fivethirtyeight')
 
-
-    positive_rate = [abs(a / (lambda x: 1 if x == 0 else x)(b))*100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
+    positive_rate = [abs(a / (1 if b == 0 else b)) * 100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
     plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
     plt.xticks(dates[-len(positive_rate):][-10:], rotation=90)
-    plt.yticks(np.arange(0, 20, step=0.5))
+    plt.yticks(np.arange(2, 10, step=0.25))
     plt.suptitle('Positive Case Rate')
     plt.show()
 
+    def plot_data(plotter, y_data, x_data=None, title=None):
+        for item in y_data:
+            plotter.plot(x_data if x_data else range(1, len(item) + 1), item)
+        if title:
+            plotter.suptitle(title)
 
-    weekly_average_deaths = weekly_average(new_deaths)
-    weekly_average_cases = weekly_average(new_cases)
+        plt.xticks(x_data if x_data else range(1, len(item) + 1), rotation=90)
+        plt.show()
 
-    plt.plot(range(1, len(weekly_average_deaths)+1), weekly_average_cases)
-    plt.plot(range(1, len(weekly_average_deaths) + 1), weekly_average_deaths)
-    plt.suptitle('Weekly Death Rate Vs Case Rate Ontario')
-    plt.show()
+    plot_data(plt, [window_average(new_cases, 7), window_average(new_deaths, 7)], title='Weekly Death Rate Vs Case Rate Ontario')
+    plot_data(plt, [new_deaths[-30:]], x_data=dates[-30:], title='Daily Fatalities, Ontario')
 
-    plt.plot(range(1, len(weekly_average_deaths) + 1), weekly_average_deaths)
-    plt.suptitle('Weekly Death Rate Ontario')
-    plt.show()
 
-    log_weekly_cases = log_items(weekly_average(cumulative_cases))
-    log_new_weekly_cases = log_items(weekly_average(new_cases))
+    log_weekly_cases = log_items(window_average(cumulative_cases, 4))
+    log_new_weekly_cases = log_items(window_average(new_cases, 4))
     spline_curve = UnivariateSpline(log_weekly_cases, log_new_weekly_cases, s=50)
     wxs = np.linspace(0, max(log_weekly_cases), 100)
     wys = spline_curve(wxs)
@@ -135,6 +131,30 @@ def main():
     plt.xticks(dates[58:], rotation=90)
     plt.suptitle('Hospitalizations')
     plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
+    plt.show()
+
+    with open('conposcovidloc.geojson', 'r') as infile:
+        data = json.load(infile)
+        list_of = data['features']
+        count = dict()
+        count['unknown'] = 0
+        key = 'Accurate_Episode_Date'  # 'Age_Group' # 'Accurate_Episode_Date'
+        for item in list_of:
+            datum = item['properties']
+            # if datum['Outcome1'] == 'Fatal':
+            # if datum['Reporting_PHU_City'] == 'Hamilton':
+            if (case := datum[key]) is None:
+                continue
+            if case not in count:
+                count[case] = 1
+            else:
+                count[case] += 1
+
+    date_counts = list(map(list, zip(*sorted(count.items(), key=lambda x: x[0]))))
+
+    dates = list(map(lambda x: x[:10], date_counts[0]))
+    plt.bar(dates, date_counts[1])
+    plt.xticks(dates, rotation=90)
     plt.show()
 
 

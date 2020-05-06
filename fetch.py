@@ -1,11 +1,9 @@
 import requests
-from datetime import datetime
 from json import dump, load
 from bs4 import BeautifulSoup
 from urllib.error import HTTPError
 from urllib.error import URLError
 from urllib.request import urlopen
-
 
 PATH_TO_DATE_FILE = './datefile'
 PATH_TO_JSON_DATA_FILE = './data.json'
@@ -35,11 +33,19 @@ def get_html(url):
 def text_to_kv_pair(text):
     csv_key_pair = dict()
     row_strings = text.split('\n')
-    rows = list(map(lambda x: x.split(','), row_strings))
+
+    def clean(list_of_strings):
+        return [x.strip('\r') for x in list_of_strings]
+
+    rows = [clean(a) for a in [x.split(',') for x in row_strings]]
+
+    def string_to_int(int_string):
+        return 0 if int_string == '' else int(int_string)
+
     headers, data = rows[0], rows[1:-1]
     for row in data:
-        date = row[1]
-        csv_key_pair[date] = dict(zip(headers[2:], row[2:]))
+        date = row[0]
+        csv_key_pair[date] = dict(zip(headers[1:], list(map(string_to_int, row[1:]))))
     return csv_key_pair
 
 
@@ -76,16 +82,16 @@ def get_date_and_data(date):
     if date_from_file != date:
         server_date, link = get_link_to_resource_and_date()
 
-    if server_date and server_date != date:
+    if server_date and server_date == date:
         print("Requesting new data")
-        if res := requests.get(link) != 200:
+        if (res := requests.get(link)).status_code != 200:
             raise Exception(f"Failed to retrieve date {res.status_code}")
         else:
             result = text_to_kv_pair(res.text)
+            date = server_date
 
     else:  # load data from file
         print("Reading data from file, no update")
         with open(PATH_TO_JSON_DATA_FILE, 'r') as infile:
             result = load(infile)
     return date, result
-

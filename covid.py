@@ -36,7 +36,6 @@ def main():
     if date == today:
         save_data_to_file(date, data)
 
-
     dates = sorted(list(data.keys()))
 
     cumulative_testing = pull_items(data, 'Total patients approved for testing as of Reporting Date')
@@ -58,7 +57,7 @@ def main():
     positive_rate = [abs(a / (1 if b == 0 else b)) * 100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
     plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
     plt.xticks(dates[-len(positive_rate):][-10:], rotation=90)
-    plt.yticks(np.arange(0, max(positive_rate[-10:]), step=0.25))
+    plt.yticks(np.arange(0, max(positive_rate[-10:]), step=0.5))
     plt.suptitle('Positive Case Rate')
     plt.show()
 
@@ -71,34 +70,17 @@ def main():
         plt.xticks(x_data if x_data else range(1, len(item) + 1), rotation=90)
         plt.show()
 
-    plot_data(plt, [window_average(new_cases, 7), window_average(new_deaths, 7)], title='Weekly Death Rate Vs Case Rate Ontario')
+    plot_data(plt, [window_average(new_cases, 7), window_average(new_deaths, 7)],
+              title='Weekly Death Rate Vs Case Rate Ontario')
     plot_data(plt, [new_deaths[-30:]], x_data=dates[-30:], title='Daily Fatalities, Ontario')
 
-
-    log_weekly_cases = log_items(window_average(cumulative_cases, 4))
-    log_new_weekly_cases = log_items(window_average(new_cases, 4))
-    spline_curve = UnivariateSpline(log_weekly_cases, log_new_weekly_cases, s=50)
-    wxs = np.linspace(0, max(log_weekly_cases), 100)
-    wys = spline_curve(wxs)
+    log_weekly_cases = log_items(window_average(cumulative_cases, 5))
+    log_new_weekly_cases = log_items(window_average(new_cases, 5))
 
     plt.rc('xtick', labelsize=8)
     plt.plot(log_weekly_cases, log_new_weekly_cases, '.')
-    plt.plot(wxs, wys)
     plt.ylabel('# of cases')
     plt.suptitle('LogLog Weekly Case Rate')
-    plt.show()
-
-    log_cases = log_items(cumulative_cases)
-    log_new_cases = log_items(new_cases)
-    spline_curve = UnivariateSpline(log_cases, log_new_cases, s=100)
-    xs = np.linspace(0, max(log_weekly_cases), 200)
-    ys = spline_curve(xs)
-
-    plt.rc('xtick', labelsize=8)
-    plt.plot(log_cases, log_new_cases, '.')
-    plt.plot(xs, ys)
-    plt.ylabel('# of cases')
-    plt.suptitle('LogLog Daily Case Rate')
     plt.show()
 
     plt.bar(dates[-10:], new_tests[-10:])
@@ -106,10 +88,11 @@ def main():
     plt.suptitle('New Testing Performed')
     plt.show()
 
-    moderate = plt.bar(dates[58:], new_hospitalizations[58:])
-    icu = plt.bar(dates[58:], new_icu_cases[58:])
-    vent = plt.bar(dates[58:], new_vent_cases[58:])
-    plt.xticks(dates[58:], rotation=90)
+    last_n_days = 14
+    moderate = plt.bar(dates[-last_n_days:], new_hospitalizations[-last_n_days:])
+    icu = plt.bar(dates[-last_n_days:], new_icu_cases[-last_n_days:])
+    vent = plt.bar(dates[-last_n_days:], new_vent_cases[-last_n_days:])
+    plt.xticks(dates[-last_n_days:], rotation=90)
     plt.suptitle('Hospitalizations')
     plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
     plt.show()
@@ -123,19 +106,19 @@ def main():
         for item in list_of:
             datum = item['properties']
             # if datum['Outcome1'] == 'Fatal':
-            # if datum['Reporting_PHU_City'] == 'Hamilton':
-            if (case := datum[key]) is None:
-                continue
-            if case not in count:
-                count[case] = 1
-            else:
-                count[case] += 1
+            if datum['Reporting_PHU_City'] == 'Hamilton':
+                if (case := datum[key]) is None:
+                    continue
+                if case not in count:
+                    count[case] = 1
+                else:
+                    count[case] += 1
 
     date_counts = list(map(list, zip(*sorted(count.items(), key=lambda x: x[0]))))
 
     dates = list(map(lambda x: x[:10], date_counts[0]))
-    plt.bar(dates, date_counts[1])
-    plt.xticks(dates, rotation=90)
+    plt.bar(dates[-28:], date_counts[1][-28:])
+    plt.xticks(dates[-28:], rotation=90)
     plt.show()
 
 

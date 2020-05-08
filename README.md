@@ -6,4 +6,4 @@ Scraping data from ontario.ca
 
 Plotting loglog case rate for ontario 
 
-Using Python 3.7
+Using Python 3.8

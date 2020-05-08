@@ -2,9 +2,8 @@ from json import load
 from math import log
 from datetime import datetime
 import matplotlib.pyplot as plt
-import numpy as np
-from scipy.interpolate import UnivariateSpline
-from fetch import get_date_and_data, save_data_to_file
+from fetch import get_date_and_data, save_data_to_file, text_to_kv_pair, ONTARIO_COVID19_GEOJSON, ONTARIO_COVID19_CSV, \
+    ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_STATUS_LINK
 
 THREE_WEEK_DELAY = 21
 
@@ -31,10 +30,15 @@ def log_items(data_list):
 
 def main():
     current_date = datetime.now()
-    today = f'{current_date.year}-{str(current_date.month).zfill(2)}-{str(current_date.day).zfill(2)}'
-    date, data = get_date_and_data(today)
+    year, month, day = current_date.year, str(current_date.month).zfill(2), str(current_date.day).zfill(2)
+    today = f'{year}-{month}-{day}'
+    date, data = get_date_and_data(today, ONTARIO_COVID19_STATUS_LINK, ONTARIO_COVID19_CSV)
     if date == today:
-        save_data_to_file(date, data)
+        save_data_to_file(date, data, ONTARIO_COVID19_CSV)
+
+    geojson_date, geojson_data = get_date_and_data(today, ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_GEOJSON)
+    if geojson_date == today:
+        save_data_to_file(geojson_date, geojson_data, ONTARIO_COVID19_GEOJSON)
 
     dates = sorted(list(data.keys()))
 
@@ -57,25 +61,30 @@ def main():
     positive_rate = [abs(a / (1 if b == 0 else b)) * 100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
     plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
     plt.xticks(dates[-len(positive_rate):][-10:], rotation=90)
-    plt.yticks(np.arange(0, max(positive_rate[-10:]), step=0.5))
+
+    step_size = 0.5
+    inverse_step_size = 1 / step_size
+    range_end = int(inverse_step_size * max(positive_rate[-10:]) + 1)
+    range_start = int(inverse_step_size * min(positive_rate[-10:]) - 1)
+    plt.yticks([i * step_size for i in range(range_start, range_end)])
     plt.suptitle('Positive Case Rate')
     plt.show()
 
     def plot_data(plotter, y_data, x_data=None, title=None):
-        for item in y_data:
-            plotter.plot(x_data if x_data else range(1, len(item) + 1), item)
+        for y in y_data:
+            plotter.plot(x_data if x_data else range(1, len(y) + 1), y)
         if title:
             plotter.suptitle(title)
 
-        plt.xticks(x_data if x_data else range(1, len(item) + 1), rotation=90)
+        plt.xticks(x_data if x_data else range(1, len(y) + 1), rotation=90)
         plt.show()
 
-    plot_data(plt, [window_average(new_cases, 7), window_average(new_deaths, 7)],
+    plot_data(plt, [window_average(new_cases, 4), window_average(new_deaths, 4)],
               title='Weekly Death Rate Vs Case Rate Ontario')
     plot_data(plt, [new_deaths[-30:]], x_data=dates[-30:], title='Daily Fatalities, Ontario')
 
-    log_weekly_cases = log_items(window_average(cumulative_cases, 5))
-    log_new_weekly_cases = log_items(window_average(new_cases, 5))
+    log_weekly_cases = log_items(window_average(cumulative_cases, 4))
+    log_new_weekly_cases = log_items(window_average(new_cases, 4))
 
     plt.rc('xtick', labelsize=8)
     plt.plot(log_weekly_cases, log_new_weekly_cases, '.')
@@ -97,6 +106,8 @@ def main():
     plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
     plt.show()
 
+
+
     with open('conposcovidloc.geojson', 'r') as infile:
         data = load(infile)
         list_of = data['features']
@@ -105,7 +116,7 @@ def main():
         key = 'Accurate_Episode_Date'  # 'Age_Group' # 'Accurate_Episode_Date'
         for item in list_of:
             datum = item['properties']
-            # if datum['Outcome1'] == 'Fatal':
+            #if datum['Outcome1'] == 'Fatal':
             if datum['Reporting_PHU_City'] == 'Hamilton':
                 if (case := datum[key]) is None:
                     continue

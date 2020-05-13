@@ -33,6 +33,7 @@ def main():
     year, month, day = current_date.year, str(current_date.month).zfill(2), str(current_date.day).zfill(2)
     today = f'{year}-{month}-{day}'
     date, data = get_date_and_data(today, ONTARIO_COVID19_STATUS_LINK, ONTARIO_COVID19_CSV)
+
     if date == today:
         save_data_to_file(date, data, ONTARIO_COVID19_CSV)
 
@@ -57,6 +58,11 @@ def main():
     new_deaths = list_diff(cumulative_deaths)
 
     plt.style.use('fivethirtyeight')
+
+    plt.bar(dates[-30:], new_cases[-30:])
+    plt.xticks(dates[-30:], rotation=90)
+    plt.show()
+
 
     positive_rate = [abs(a / (1 if b == 0 else b)) * 100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
     plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
@@ -106,30 +112,25 @@ def main():
     plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
     plt.show()
 
-
-
-    with open('conposcovidloc.geojson', 'r') as infile:
-        data = load(infile)
-        list_of = data['features']
-        count = dict()
-        count['unknown'] = 0
-        key = 'Accurate_Episode_Date'  # 'Age_Group' # 'Accurate_Episode_Date'
-        for item in list_of:
-            datum = item['properties']
-            #if datum['Outcome1'] == 'Fatal':
-            if datum['Reporting_PHU_City'] == 'Hamilton':
-                if (case := datum[key]) is None:
-                    continue
-                if case not in count:
-                    count[case] = 1
-                else:
-                    count[case] += 1
+    count = dict()
+    count['unknown'] = 0
+    key = 'Accurate_Episode_Date'  # 'Age_Group' # 'Accurate_Episode_Date'
+    for item in geojson_data['features']:
+        datum = item['properties']
+        # if datum['Outcome1'] == 'Fatal':
+        # if datum['Reporting_PHU_City'] == 'Hamilton':
+        if (case := datum[key]) is None:
+            continue
+        if case not in count:
+            count[case] = 1
+        else:
+            count[case] += 1
 
     date_counts = list(map(list, zip(*sorted(count.items(), key=lambda x: x[0]))))
 
     dates = list(map(lambda x: x[:10], date_counts[0]))
-    plt.bar(dates[-28:], date_counts[1][-28:])
-    plt.xticks(dates[-28:], rotation=90)
+    plt.bar(dates[-38:], date_counts[1][-38:])
+    plt.xticks(dates[-38:], rotation=90)
     plt.show()
 
 

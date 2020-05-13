@@ -2,8 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="33b3e8be-fc79-43c8-89be-9acf8a693dc1" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../ontario_covid19_tracking/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../ontario_covid19_tracking/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../ontario_covid19_tracking/covid.py" beforeDir="false" afterPath="$PROJECT_DIR$/../ontario_covid19_tracking/covid.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/covid.py" beforeDir="false" afterPath="$PROJECT_DIR$/covid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data.json" beforeDir="false" afterPath="$PROJECT_DIR$/data.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datefilejson" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/fetch.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetch.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,18 +24,19 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../ontario_covid19_tracking" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1ZqzUDPm7RgatKRWF6SM3cRMZRR" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -59,18 +66,28 @@
       <method v="2" />
     </configuration>
     <configuration name="covid" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="ontario_covid19_tracking" />
+      <module name="covid19" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../ontario_covid19_tracking" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="SDK_HOME" value="$USER_HOME$/.virtualenvs/ontario_covid19_tracking/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../ontario_covid19_tracking/covid.py" />
+      <EXTENSION ID="net.ashald.envfile">
+        <option name="IS_ENABLED" value="true" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" />
+        </ENTRIES>
+      </EXTENSION>
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/covid.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -142,10 +159,14 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="609" y="198" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1586021900702">
+    <state x="441" y="222" key="#Inspections" timestamp="1589208571126">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state x="609" y="198" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1586021900702" />
+    <state x="441" y="222" key="#Inspections/0.23.1680.1027@0.23.1680.1027" timestamp="1589208571126" />
+    <state x="609" y="198" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1589033853089">
+      <screen x="0" y="23" width="1680" height="1027" />
+    </state>
+    <state x="609" y="198" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1589033853089" />
     <state x="617" y="346" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1585602913506">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
@@ -154,6 +175,10 @@
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
     <state x="975" y="290" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1585751334378" />
+    <state x="598" y="214" key="#covid" timestamp="1589033903569">
+      <screen x="0" y="23" width="1680" height="1027" />
+    </state>
+    <state x="598" y="214" key="#covid/0.23.1680.1027@0.23.1680.1027" timestamp="1589033903569" />
     <state x="452" y="437" key="Github.ShareDialog" timestamp="1586018915509">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
@@ -162,33 +187,33 @@
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
     <state x="409" y="245" key="Github.UntrackedFilesDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1586018924637" />
-    <state width="1028" height="314" key="GridCell.Tab.0.bottom" timestamp="1586022857909">
+    <state width="1209" height="314" key="GridCell.Tab.0.bottom" timestamp="1589294689144">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state width="1028" height="314" key="GridCell.Tab.0.bottom/0.23.1680.1027@0.23.1680.1027" timestamp="1586022857909" />
-    <state width="1028" height="314" key="GridCell.Tab.0.center" timestamp="1586022857908">
+    <state width="1209" height="314" key="GridCell.Tab.0.bottom/0.23.1680.1027@0.23.1680.1027" timestamp="1589294689144" />
+    <state width="1209" height="314" key="GridCell.Tab.0.center" timestamp="1589294689143">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state width="1028" height="314" key="GridCell.Tab.0.center/0.23.1680.1027@0.23.1680.1027" timestamp="1586022857908" />
-    <state width="1028" height="314" key="GridCell.Tab.0.left" timestamp="1586022857908">
+    <state width="1209" height="314" key="GridCell.Tab.0.center/0.23.1680.1027@0.23.1680.1027" timestamp="1589294689143" />
+    <state width="1209" height="314" key="GridCell.Tab.0.left" timestamp="1589294689143">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state width="1028" height="314" key="GridCell.Tab.0.left/0.23.1680.1027@0.23.1680.1027" timestamp="1586022857908" />
-    <state width="1028" height="314" key="GridCell.Tab.0.right" timestamp="1586022857909">
+    <state width="1209" height="314" key="GridCell.Tab.0.left/0.23.1680.1027@0.23.1680.1027" timestamp="1589294689143" />
+    <state width="1209" height="314" key="GridCell.Tab.0.right" timestamp="1589294689144">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state width="1028" height="314" key="GridCell.Tab.0.right/0.23.1680.1027@0.23.1680.1027" timestamp="1586022857909" />
-    <state x="369" y="175" key="SettingsEditor" timestamp="1585604605114">
+    <state width="1209" height="314" key="GridCell.Tab.0.right/0.23.1680.1027@0.23.1680.1027" timestamp="1589294689144" />
+    <state x="369" y="175" key="SettingsEditor" timestamp="1589208614951">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state x="369" y="175" key="SettingsEditor/0.23.1680.1027@0.23.1680.1027" timestamp="1585604605114" />
+    <state x="369" y="175" key="SettingsEditor/0.23.1680.1027@0.23.1680.1027" timestamp="1589208614951" />
     <state x="475" y="369" key="com.intellij.ide.util.TipDialog" timestamp="1585600599110">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
     <state x="475" y="369" key="com.intellij.ide.util.TipDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1585600599110" />
-    <state x="463" y="250" width="670" height="676" key="search.everywhere.popup" timestamp="1585602083531">
+    <state x="463" y="250" width="670" height="676" key="search.everywhere.popup" timestamp="1589146129537">
       <screen x="0" y="23" width="1680" height="1027" />
     </state>
-    <state x="463" y="250" width="670" height="676" key="search.everywhere.popup/0.23.1680.1027@0.23.1680.1027" timestamp="1585602083531" />
+    <state x="463" y="250" width="670" height="676" key="search.everywhere.popup/0.23.1680.1027@0.23.1680.1027" timestamp="1589146129537" />
   </component>
 </project>

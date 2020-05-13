@@ -63,7 +63,7 @@ def save_data_to_file(date, data, filetype):
         f.write(date)
 
 
-def get_date_and_data(date, link, filetype):
+def get_date_and_data(local_date, link, filetype):
     server_date = None
     if filetype == ONTARIO_COVID19_CSV:
         path_to_date_file = PATH_TO_JSON_DATE_FILE
@@ -73,10 +73,10 @@ def get_date_and_data(date, link, filetype):
     with open(path_to_date_file, 'r') as f:
         date_from_file = f.read()
 
-    if date_from_file != date:
+    if date_from_file != local_date:
         server_date, link = get_resource(link, filetype)
 
-    if server_date and server_date == date:
+    if server_date and server_date == local_date:
         print("Requesting new data")
         if (res := requests.get(link)).status_code != 200:
             raise Exception(f"Failed to retrieve date {res.status_code}")
@@ -85,7 +85,7 @@ def get_date_and_data(date, link, filetype):
                 result = text_to_kv_pair(res.text)
             else:
                 result = loads(res.text)
-            date = server_date
+            remote_date = server_date
 
     else:  # load data from file
         print("Reading data from file, no update")
@@ -95,8 +95,9 @@ def get_date_and_data(date, link, filetype):
             path_to_file = PATH_TO_GEOJSON_DATA_FILE
         with open(path_to_file, 'r') as infile:
             result = load(infile)
+        remote_date = date_from_file
 
-    return date, result
+    return remote_date, result
 
 
 def get_resource(resource_path, filetype):

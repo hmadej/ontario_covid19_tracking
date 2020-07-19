@@ -100,20 +100,25 @@ def get_date_and_data(local_date, link, filetype):
     return remote_date, result
 
 
-def get_resource(resource_path, filetype):
-    date = None
-    html = get_html(BASE_URL + resource_path)
-    bs = BeautifulSoup(html.read(), 'html.parser')
+def find_table_str_value(bs, table_str):
     section = bs.find('section', {"class": "additional-info"})
     table = section.find('table')
     for tr in table.find_all("tr"):
-        if tr.th.string == LAST_VALIDATED_DATE:
-            date = tr.td.string.strip()
-            break
+        if tr.th.string == table_str:
+            return tr.td.string.strip()
 
-    download_buttons = bs.find_all('a', {'class': TAG_RESOURCE}, href=True)
+
+def find_download_link(bs, download_tag, filetype):
+    download_buttons = bs.find_all('a', {'class': download_tag}, href=True)
     for button in download_buttons:
         if filetype in button['href']:
-            download_link = button['href']
-            break
+            return button['href']
+
+
+def get_resource(resource_path, filetype):
+    html = get_html(f'{BASE_URL}{resource_path}')
+    bs = BeautifulSoup(html.read(), 'html.parser')
+    date = find_table_str_value(bs, LAST_VALIDATED_DATE)
+    download_link = find_download_link(bs, TAG_RESOURCE, filetype)
+
     return date, download_link

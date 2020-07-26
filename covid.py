@@ -7,154 +7,148 @@ from fetch import get_date_and_data, save_data_to_file, text_to_kv_pair, ONTARIO
     ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_STATUS_LINK
 
 THREE_WEEK_DELAY = 21
+WINDOW_SIZE = 5
+LAST_N_DAYS = (WINDOW_SIZE * 7) + 1
+FIRST_N_WEEKS = (LAST_N_DAYS // WINDOW_SIZE) + 1
 
 
-def list_diff(items):
-    prev, new_list = 0, []
-    for item in items:
-        new_list.append(item - prev)
-        prev = item
-    return new_list
+def make_plots(plot_title, plots):
+    plts, dates = plots['plots'], plots['dates']
+    for plot in plts:
+        plt.scatter(list(plot['data'].keys())[-LAST_N_DAYS:], list(plot['data'].values())[-LAST_N_DAYS:],
+                    label=plot['name'], alpha=0.7)
+        plt.plot(list(plot['avg_data'].keys())[:FIRST_N_WEEKS], list(plot['avg_data'].values())[:FIRST_N_WEEKS],
+                 label=f'{plot["name"]} Average', alpha=0.7)
+
+    plt.xticks(dates[-LAST_N_DAYS:], rotation=90)
+    plt.suptitle(plot_title)
+    plt.legend()
+    plt.show()
 
 
-def window_average(data, window):
-    reversed_data = list(reversed(data))
-    reversed_data = [sum(reversed_data[i:i + window]) / len(reversed_data[i:i + window]) for i in
-                     range(0, len(data), window)]
-    return list(reversed(reversed_data))
-
-
-def pull_items(data, key_name):
-    return [data[key][key_name] for key in data.keys()]
-
-
-def log_items(data_list):
-    return [0 if x <= 0 else log(x) for x in data_list]
+def cumulative_to_daily(values):
+    result = [values[i + 1] - values[i] for i in range(0, len(values) - 1)]
+    result.insert(0, values[0])
+    return result
 
 
 def main():
     current_date = datetime.now()
     year, month, day = current_date.year, str(current_date.month).zfill(2), str(current_date.day).zfill(2)
     today = f'{year}-{month}-{day}'
-    date, data = get_date_and_data(today, ONTARIO_COVID19_STATUS_LINK, ONTARIO_COVID19_CSV)
 
-    if date == today:
-        save_data_to_file(date, data, ONTARIO_COVID19_CSV)
+    ontario_data = get_date_and_data(today, ONTARIO_COVID19_STATUS_LINK, ONTARIO_COVID19_CSV)
+    if (date := ontario_data['date']) == today:
+        save_data_to_file(date, ontario_data['data'], ONTARIO_COVID19_CSV)
 
-    geojson_date, geojson_data = get_date_and_data(today, ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_GEOJSON)
-    if geojson_date == today:
-        save_data_to_file(geojson_date, geojson_data, ONTARIO_COVID19_GEOJSON)
+    ontario_case_data = get_date_and_data(today, ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_GEOJSON)
+    if (date := ontario_case_data['date']) == today:
+        save_data_to_file(date, ontario_case_data['data'], ONTARIO_COVID19_GEOJSON)
 
     arg = input('Continue? Y/[N] ')
     if arg[0].lower() != 'y':
         return 0
 
-    print(geojson_data['features'][0]['properties'].keys())
+    ontario_values = ontario_data['data'].values()
+    ontario_dates = list(ontario_data['data'].keys())
 
-    dates = sorted(list(data.keys()))
+    deaths_itr = cumulative_to_daily([item['Deaths'] for item in ontario_values])
+    deaths = dict(zip(ontario_dates, deaths_itr))
+    avg_deaths = new_window_average(dict(zip(ontario_dates, deaths_itr)), WINDOW_SIZE)
 
-    cumulative_testing = pull_items(data, 'Total patients approved for testing as of Reporting Date')
-    cumulative_cases = pull_items(data, 'Total Cases')
-    cumulative_hospitalizations = pull_items(data, 'Number of patients hospitalized with COVID-19')
-    cumulative_icu = pull_items(data, 'Number of patients in ICU with COVID-19')
-    cumulative_vent = pull_items(data, 'Number of patients in ICU on a ventilator with COVID-19')
-    cumulative_deaths = pull_items(data, 'Deaths')
+    positives_itr = cumulative_to_daily([item['Total Cases'] for item in ontario_values])
+    postives = dict(zip(ontario_dates, positives_itr))
+    avg_positives = new_window_average(dict(zip(ontario_dates, positives_itr)), WINDOW_SIZE)
 
-    new_tests = list_diff(cumulative_testing)
-    new_cases = list_diff(cumulative_cases)
-    new_hospitalizations = list_diff(cumulative_hospitalizations)
-    new_icu_cases = list_diff(cumulative_icu)
-    new_vent_cases = list_diff(cumulative_vent)
-    new_deaths = list_diff(cumulative_deaths)
+    daily_plots = {
+        'plots': [
+            {
+                'name': 'Deaths in Ontario',
+                'data': deaths,
+                'avg_data': avg_deaths
+            },
+            {
+                'name': 'Daily Positive Count',
+                'data': postives,
+                'avg_data': avg_positives
+            }
+        ],
+        'dates': ontario_dates
+    }
 
-    plt.style.use('fivethirtyeight')
+    make_plots('Deaths in Ontario', daily_plots)
 
-    plt.bar(dates[-42:], new_cases[-42:])
-    plt.xticks(dates[-42:], rotation=90)
-    plt.show()
+    print(ontario_values)
 
-    positive_rate = [abs(a / (1 if b == 0 else b)) * 100 for a, b in zip(new_cases[-30:], new_tests[-30:])]
-    plt.plot(dates[-len(positive_rate):][-10:], positive_rate[-10:])
-    plt.xticks(dates[-len(positive_rate):][-10:], rotation=90)
+    hospital_itr = [item['Number of patients hospitalized with COVID-19'] for item in ontario_values]
+    hospitalizations = dict(zip(ontario_dates, hospital_itr))
+    avg_hospitalizations = new_window_average(dict(zip(ontario_dates, hospital_itr)), WINDOW_SIZE)
 
-    step_size = 0.5
-    inverse_step_size = 1 / step_size
-    range_end = int(inverse_step_size * max(positive_rate[-10:]) + 1)
-    range_start = int(inverse_step_size * min(positive_rate[-10:]) - 1)
-    plt.yticks([i * step_size for i in range(range_start, range_end)])
-    plt.suptitle('Positive Case Rate')
-    plt.show()
+    icu_itr = [item['Number of patients in ICU with COVID-19'] for item in ontario_values]
+    icu = dict(zip(ontario_dates, icu_itr))
+    avg_icu = new_window_average(dict(zip(ontario_dates, icu_itr)), WINDOW_SIZE)
 
-    def plot_data(plotter, y_data, x_data=None, title=None):
-        y = {}
-        for y in y_data:
-            plotter.plot(x_data if x_data else range(1, len(y) + 1), y)
-        if title:
-            plotter.suptitle(title)
+    ventilator_itr = [item['Number of patients in ICU on a ventilator with COVID-19'] for item in ontario_values]
+    ventilator = dict(zip(ontario_dates, ventilator_itr))
+    avg_ventilator = new_window_average(dict(zip(ontario_dates, ventilator_itr)), WINDOW_SIZE)
 
-        plt.xticks(x_data if x_data else range(1, len(y) + 1), rotation=90)
-        plt.show()
+    hospital_plots = {
+        'plots': [
+            {
+                'name': 'Number of patients hospitalized',
+                'data': hospitalizations,
+                'avg_data': avg_hospitalizations
+            },
+            {
+                'name': 'Number of patients in ICU',
+                'data': icu,
+                'avg_data': avg_icu
+            },
+            {
+                'name': 'Number of patients on a ventilator',
+                'data': ventilator,
+                'avg_data': avg_ventilator
+            },
+        ],
+        'dates': ontario_dates
+    }
 
-    plot_data(plt, [window_average(new_cases, 7), window_average(new_deaths, 7)],
-              title='Weekly Death Rate Vs Case Rate Ontario')
-    plot_data(plt, [new_deaths[-30:]], x_data=dates[-30:], title='Daily Fatalities, Ontario')
+    make_plots('Ontario Hospital Status', hospital_plots)
 
+    ontario, cities = get_regional_data(ontario_case_data)
 
-    last_n_days = 14
-    moderate = plt.bar(dates[-last_n_days:], new_hospitalizations[-last_n_days:])
-    icu = plt.bar(dates[-last_n_days:], new_icu_cases[-last_n_days:])
-    vent = plt.bar(dates[-last_n_days:], new_vent_cases[-last_n_days:])
-    plt.xticks(dates[-last_n_days:], rotation=90)
-    plt.suptitle('Hospitalizations')
-    plt.legend([moderate, icu, vent], ['Hospital', 'ICU', 'Vent'])
-    plt.show()
+    case_plots = {
+        'plots': [
+            {
+                'name': 'Hamilton',
+                'data': cities['Hamilton'],
+                'avg_data': new_window_average(cities['Hamilton'], WINDOW_SIZE)
+            },
+            {
+                'name': 'Oakville',
+                'data': cities['Oakville'],
+                'avg_data': new_window_average(cities['Oakville'], WINDOW_SIZE)
+            },
+            {
+                'name': 'Windsor',
+                'data': cities['Windsor'],
+                'avg_data': new_window_average(cities['Windsor'], WINDOW_SIZE)
+            },
+            {
+                'name': 'Sarnia/Lambton',
+                'data': cities['Point Edward'],
+                'avg_data': new_window_average(cities['Point Edward'], WINDOW_SIZE)
+            },
+            {
+                'name': 'Ontario',
+                'data': ontario,
+                'avg_data': new_window_average(ontario, WINDOW_SIZE)
+            }
+        ],
+        'dates': list(ontario.keys())
+    }
 
-    ontario, cities = get_regional_data(geojson_data)
-    print(ontario)
-    print(cities['Hamilton'])
-
-    plots = [
-        {
-            'name': 'Hamilton',
-            'data': cities['Hamilton'],
-            'avg_data': new_window_average(cities['Hamilton'], 7)
-        },
-        {
-            'name': 'Oakville',
-            'data': cities['Oakville'],
-            'avg_data': new_window_average(cities['Oakville'], 7)
-        },
-        {
-            'name': 'Windsor',
-            'data': cities['Windsor'],
-            'avg_data': new_window_average(cities['Windsor'], 7)
-        },
-        {
-            'name': 'Sarnia/Lambton',
-            'data': cities['Point Edward'],
-            'avg_data': new_window_average(cities['Point Edward'], 7)
-        },
-        {
-            'name': 'Ontario',
-            'data': ontario,
-            'avg_data': new_window_average(ontario, 7)
-        }
-    ]
-
-    LAST_N_DAYS = 35 + 1
-    FIRST_N_WEEKS = (LAST_N_DAYS // 7) + 1
-    dates = list(ontario.keys())
-
-    for place in plots:
-        plt.scatter(list(place['data'].keys())[-LAST_N_DAYS:], list(place['data'].values())[-LAST_N_DAYS:],
-            label=place['name'], alpha=0.7)
-        plt.plot(list(place['avg_data'].keys())[:FIRST_N_WEEKS], list(place['avg_data'].values())[:FIRST_N_WEEKS],
-             label=f'{place["name"]} AVG', alpha=0.7)
-
-    plt.xticks(dates[-LAST_N_DAYS:], rotation=90)
-    plt.suptitle("Weekly average")
-    plt.legend()
-    plt.show()
+    make_plots('Weekly Average', case_plots)
 
 
 if __name__ == "__main__":

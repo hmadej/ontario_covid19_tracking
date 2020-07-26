@@ -28,12 +28,12 @@ def initialize_region_dates(region):
             break
 
 
-def get_regional_data(geojson_data):
+def get_regional_data(data):
     province, cities = dict(), dict()
     initialize_region_dates(province)
     age_groups = ['<20', '20s', '30s', '40s', '50s', '60s', '70s', '80s', '90s', 'UNKNOWN']
     date_key = 'Accurate_Episode_Date'
-    for item in geojson_data['features']:
+    for item in data['data']['features']:
         datum = item['properties']
         if datum['Age_Group'] not in age_groups:
             continue

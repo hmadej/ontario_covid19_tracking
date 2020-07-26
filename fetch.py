@@ -97,7 +97,10 @@ def get_date_and_data(local_date, link, filetype):
             result = load(infile)
         remote_date = date_from_file
 
-    return remote_date, result
+    return {
+        'date': remote_date,
+        'data': result
+    }
 
 
 def find_table_str_value(bs, table_str):

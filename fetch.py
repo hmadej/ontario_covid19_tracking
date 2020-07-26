@@ -82,6 +82,8 @@ def get_date_and_data(local_date, link, filetype):
             raise Exception(f"Failed to retrieve date {res.status_code}")
         else:
             if filetype == ONTARIO_COVID19_CSV:
+                with open('ont.csv', 'w') as f:
+                    f.write(res.text)
                 result = text_to_kv_pair(res.text)
             else:
                 result = loads(res.text)

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from helper import get_regional_data, new_window_average
 from fetch import get_date_and_data, save_data_to_file, text_to_kv_pair, ONTARIO_COVID19_GEOJSON, ONTARIO_COVID19_CSV, \
     ONTARIO_COVID19_POS_LINK, ONTARIO_COVID19_STATUS_LINK
+from rt import *
 
 THREE_WEEK_DELAY = 21
 WINDOW_SIZE = 5
@@ -49,6 +50,26 @@ def main():
     if arg[0].lower() != 'y':
         return 0
 
+    ontario, cities = get_regional_data(ontario_case_data)
+
+    with open('ont.csv', 'r') as f:
+        ontario_rt = pd.read_csv(f,
+                                 usecols=['Reported Date', 'Total Cases'],
+                                 parse_dates=['Reported Date'],
+                                 index_col=['Reported Date'],
+                                 squeeze=True).sort_index()
+
+    cases = ontario_rt.rename("ON cases")
+    cases.index.names = ['date']
+    result = calculate_rt(cases)
+    fig, ax = plt.subplots(figsize=(1200 / 72, 800 / 72))
+    plot_rt(result, fig, ax, 'ON')
+    ax.set_title(f'Real-time $R_t$ for ON')
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+    plt.show()
+
+
     ontario_values = ontario_data['data'].values()
     ontario_dates = list(ontario_data['data'].keys())
 
@@ -77,9 +98,6 @@ def main():
     }
 
     make_plots('Deaths in Ontario', daily_plots)
-
-    print(ontario_values)
-
     hospital_itr = [item['Number of patients hospitalized with COVID-19'] for item in ontario_values]
     hospitalizations = dict(zip(ontario_dates, hospital_itr))
     avg_hospitalizations = new_window_average(dict(zip(ontario_dates, hospital_itr)), WINDOW_SIZE)
@@ -114,8 +132,6 @@ def main():
     }
 
     make_plots('Ontario Hospital Status', hospital_plots)
-
-    ontario, cities = get_regional_data(ontario_case_data)
 
     case_plots = {
         'plots': [

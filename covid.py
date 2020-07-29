@@ -13,6 +13,20 @@ LAST_N_DAYS = (WINDOW_SIZE * 7) + 1
 FIRST_N_WEEKS = (LAST_N_DAYS // WINDOW_SIZE) + 1
 
 
+def generate_plots_of(keys, data_set, dates):
+    plots = []
+    for key in keys:
+        print(key)
+        itr = cumulative_to_daily([item[key] for item in data_set])
+        plot = {
+            'name': key,
+            'data': dict(zip(dates, itr)),
+            'avg_data': new_window_average(dict(zip(dates, itr)), WINDOW_SIZE),
+        }
+        plots.append(plot)
+    return {'plots': plots, 'dates': dates}
+
+
 def make_plots(plot_title, plots):
     plts, dates = plots['plots'], plots['dates']
     for plot in plts:
@@ -46,10 +60,6 @@ def main():
     if (date := ontario_case_data['date']) == today:
         save_data_to_file(date, ontario_case_data['data'], ONTARIO_COVID19_GEOJSON)
 
-    arg = input('Continue? Y/[N] ')
-    if arg[0].lower() != 'y':
-        return 0
-
     ontario, cities = get_regional_data(ontario_case_data)
 
     with open('ont.csv', 'r') as f:
@@ -62,76 +72,29 @@ def main():
     cases = ontario_rt.rename("ON cases")
     cases.index.names = ['date']
     result = calculate_rt(cases)
-    fig, ax = plt.subplots(figsize=(1200 / 72, 800 / 72))
-    plot_rt(result, fig, ax, 'ON')
-    ax.set_title(f'Real-time $R_t$ for ON')
-    ax.xaxis.set_major_locator(mdates.WeekdayLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    plt.show()
-
 
     ontario_values = ontario_data['data'].values()
     ontario_dates = list(ontario_data['data'].keys())
 
-    deaths_itr = cumulative_to_daily([item['Deaths'] for item in ontario_values])
-    deaths = dict(zip(ontario_dates, deaths_itr))
-    avg_deaths = new_window_average(dict(zip(ontario_dates, deaths_itr)), WINDOW_SIZE)
+    daily_plots = generate_plots_of(['Deaths', 'Total Cases'], ontario_values, ontario_dates)
+    hospital_plots = generate_plots_of(['Number of patients hospitalized with COVID-19',
+                                       'Number of patients in ICU with COVID-19',
+                                       'Number of patients in ICU on a ventilator with COVID-19'],
+                                      ontario_values, ontario_dates)
 
-    positives_itr = cumulative_to_daily([item['Total Cases'] for item in ontario_values])
-    postives = dict(zip(ontario_dates, positives_itr))
-    avg_positives = new_window_average(dict(zip(ontario_dates, positives_itr)), WINDOW_SIZE)
+    ta = 'Total patients approved for testing as of Reporting Date'
+    cp = 'Total Cases'
+    yd = ontario_data['data'][ontario_dates[-2]]
+    td = ontario_data['data'][ontario_dates[-1]]
+    positivity_rate = (td[cp] - yd[cp]) / (td[ta] - yd[ta])
 
-    daily_plots = {
-        'plots': [
-            {
-                'name': 'Deaths in Ontario',
-                'data': deaths,
-                'avg_data': avg_deaths
-            },
-            {
-                'name': 'Daily Positive Count',
-                'data': postives,
-                'avg_data': avg_positives
-            }
-        ],
-        'dates': ontario_dates
-    }
-
-    make_plots('Deaths in Ontario', daily_plots)
-    hospital_itr = [item['Number of patients hospitalized with COVID-19'] for item in ontario_values]
-    hospitalizations = dict(zip(ontario_dates, hospital_itr))
-    avg_hospitalizations = new_window_average(dict(zip(ontario_dates, hospital_itr)), WINDOW_SIZE)
-
-    icu_itr = [item['Number of patients in ICU with COVID-19'] for item in ontario_values]
-    icu = dict(zip(ontario_dates, icu_itr))
-    avg_icu = new_window_average(dict(zip(ontario_dates, icu_itr)), WINDOW_SIZE)
-
-    ventilator_itr = [item['Number of patients in ICU on a ventilator with COVID-19'] for item in ontario_values]
-    ventilator = dict(zip(ontario_dates, ventilator_itr))
-    avg_ventilator = new_window_average(dict(zip(ontario_dates, ventilator_itr)), WINDOW_SIZE)
-
-    hospital_plots = {
-        'plots': [
-            {
-                'name': 'Number of patients hospitalized',
-                'data': hospitalizations,
-                'avg_data': avg_hospitalizations
-            },
-            {
-                'name': 'Number of patients in ICU',
-                'data': icu,
-                'avg_data': avg_icu
-            },
-            {
-                'name': 'Number of patients on a ventilator',
-                'data': ventilator,
-                'avg_data': avg_ventilator
-            },
-        ],
-        'dates': ontario_dates
-    }
-
-    make_plots('Ontario Hospital Status', hospital_plots)
+    POPULATION_ONTARIO = 14446515
+    H100k = 100000
+    avg = new_window_average(ontario, WINDOW_SIZE)
+    cases_per_100k = (list(avg.values())[1] / POPULATION_ONTARIO) * H100k
+    print(f'{cases_per_100k:2.2f} cases per 100,000')
+    print(f'{positivity_rate:2.2f}% positivity rate')
+    print(result.iloc[-1])
 
     case_plots = {
         'plots': [
@@ -164,6 +127,19 @@ def main():
         'dates': list(ontario.keys())
     }
 
+    arg = input('Continue? Y/[N] ')
+    if arg[0].lower() != 'y':
+        return 0
+
+    fig, ax = plt.subplots(figsize=(1200 / 72, 800 / 72))
+    plot_rt(result, fig, ax, 'ON')
+    ax.set_title(f'Real-time $R_t$ for ON')
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+    plt.show()
+
+    make_plots('Deaths in Ontario', daily_plots)
+    make_plots('Ontario Hospital Status', hospital_plots)
     make_plots('Weekly Average', case_plots)
 
 

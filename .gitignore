@@ -2,3 +2,5 @@ data.json
 datefilejson
 datefilegeojson
 conposcovidloc.geojson
+.env
+ont.csv

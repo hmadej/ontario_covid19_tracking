@@ -59,7 +59,7 @@ def get_regional_data(data):
     return province, cities
 
 
-def new_window_average(data, window_length):
+def window_average(data, window_length):
     '''
     :param data: Dictonary with k,v pair Date, Count
     :param window_length: length of the window that will be averaged

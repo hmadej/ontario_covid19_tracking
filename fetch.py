@@ -62,9 +62,7 @@ def save_data_to_file(date, data, filetype):
     with open(path_to_date_file, 'w') as f:
         f.write(date)
 
-
-def get_date_and_data(local_date, link, filetype):
-    server_date = None
+def get_date_from_file(filetype):
     if filetype == ONTARIO_COVID19_CSV:
         path_to_date_file = PATH_TO_JSON_DATE_FILE
     else:
@@ -73,12 +71,26 @@ def get_date_and_data(local_date, link, filetype):
     with open(path_to_date_file, 'r') as f:
         date_from_file = f.read()
 
+    return date_from_file
+
+
+def check_for_update(local_date, link, filetype):
+    server_date = None
+    date_from_file = get_date_from_file(filetype)
+
     if date_from_file != local_date:
-        server_date, link = get_resource(link, filetype)
+        server_date, update_link = get_resource(link, filetype)
 
     if server_date and server_date == local_date:
+        return True, update_link
+    return False, None
+
+
+def get_date_and_data(local_date, link, filetype):
+    updated, update_link = check_for_update(local_date, link, filetype)
+    if updated:
         print("Requesting new data")
-        if (res := requests.get(link)).status_code != 200:
+        if (res := requests.get(update_link)).status_code != 200:
             raise Exception(f"Failed to retrieve date {res.status_code}")
         else:
             if filetype == ONTARIO_COVID19_CSV:
@@ -87,10 +99,10 @@ def get_date_and_data(local_date, link, filetype):
                 result = text_to_kv_pair(res.text)
             else:
                 result = loads(res.text)
-            remote_date = server_date
+            remote_date = local_date
 
     else:  # load data from file
-        print("Reading data from file, no update")
+        date_from_file = get_date_from_file(filetype)
         if filetype == ONTARIO_COVID19_CSV:
             path_to_file = PATH_TO_JSON_DATA_FILE
         else:

@@ -101,7 +101,7 @@ def get_posteriors(sr, sigma=0.15):
 
 
 def prepare_cases(cases, cutoff=1):
-    new_cases = cases.diff()
+    new_cases = cases#.diff()
     smoothed = new_cases.rolling(7,
                                  win_type='gaussian',
                                  min_periods=1,
